@@ -8,7 +8,10 @@ public class gravityAffectedObject : MonoBehaviour
     Rigidbody rb;
     public float gravity = 2;
     public Vector3 gravityDir = Vector3.zero;
-    List<GravitySource> gravitySources = new List<GravitySource>();
+    GravitySource activeGravitySource;
+    public float rotationSpeed = 1;
+    
+    int highestCurrPriority = int.MinValue;
     // Start is called before the first frame update
     void Start()
     {
@@ -18,61 +21,65 @@ public class gravityAffectedObject : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (gravitySources.Count > 0)
+        if (activeGravitySource)
         {
-            gravityDir = gravityDirection();
+            gravityDir = activeGravitySource.computeGravity(transform.position);
             rb.AddForce(gravityDir * gravity, ForceMode.Acceleration);
-            transform.up = -gravityDir;
+            //transform.up = -gravityDir;
+            transform.up = Vector3.Lerp(transform.up, -gravityDir, rotationSpeed * Time.deltaTime);
         }
-    }
-
-    private Vector3 gravityDirection()
-    {
-        GravitySource[] sources = gravitySources.ToArray();
-        GravitySource source = sources[0];
-        if (source != null)
-        {
-            return source.GravityFromPosition(transform.position);
-        }
-        return Vector3.zero;
-    }
-
-    private void SortGravitySources()
-    {
-        gravitySources.Sort(delegate (GravitySource x, GravitySource y)
-        {
-            if (x.priority < y.priority)
-            {
-                return 1;
-            }
-            else if (x.priority > y.priority)
-            {
-                return -1;
-            }
-            //equal priority. sort by closest one.
-            else
-            {
-                if (Vector3.Distance(x.position, this.transform.position) <= Vector3.Distance(y.position, this.transform.position))
-                {
-                    return -1;
-                }
-                return 1;
-            }
-        });
     }
 
     private void OnTriggerEnter(Collider other)
     {
         if (other.gameObject.tag == "GravitySource")
         {
-            gravitySources.Add(other.gameObject.GetComponent<GravitySource>());
-            SortGravitySources();
+            GravitySource gs = other.gameObject.GetComponent<GravitySource>();
+
+            if (gs == null) return;
+            SetHighestPriorityGravitySource(gs);
         }
+    }
+
+    private void SetHighestPriorityGravitySource(GravitySource gs)
+    {
+        if (gs.priority > highestCurrPriority)
+        {
+            SetGravitySource(gs);
+        }
+        else if (gs.priority == highestCurrPriority)
+        {
+            if (Vector3.Distance(activeGravitySource.position, transform.position) > Vector3.Distance(gs.position, transform.position))
+            {
+                SetGravitySource(gs);
+            }
+        }
+    }
+
+    private void SetGravitySource(GravitySource gs)
+    {
+        activeGravitySource = gs;
+        highestCurrPriority = gs.priority;
+    }
+
+    private void OnTriggerStay(Collider other)
+    {
+        if (other.gameObject.tag.Equals("GravitySource")) {
+            GravitySource gs = other.gameObject.GetComponent<GravitySource>();
+            SetHighestPriorityGravitySource(gs);
+        }
+        
     }
 
     private void OnTriggerExit(Collider other)
     {
-        if (other.gameObject.tag == "GravitySource")
-            gravitySources.Remove(other.gameObject.GetComponent<GravitySource>());
+        if (other.gameObject.tag.Equals("GravitySource")) {
+            GravitySource gs = other.gameObject.GetComponent<GravitySource>();
+
+            if (gs == activeGravitySource) { 
+                activeGravitySource = null;
+                highestCurrPriority = int.MinValue;
+            }
+        }
     }
 }

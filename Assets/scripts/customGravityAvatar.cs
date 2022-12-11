@@ -39,5 +39,5 @@ public class customGravityAvatar : MonoBehaviour
         {
             rb.AddForce(transform.up * gravity * 120, ForceMode.Force);
         }
-    }
+     }
 }
