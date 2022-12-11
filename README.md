@@ -6,7 +6,7 @@ https://user-images.githubusercontent.com/33844493/205741693-33a5f9d6-4366-424c-
 
 The demo has been updated to support any convex mesh as a source of gravity!
 
-Capsule, cylinder, cube, sphere, you name it!
+Capsule, cylinder, cube, sphere, you can even make your own!
 
 ## Benefits of my approach:
 
